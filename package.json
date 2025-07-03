@@ -1,0 +1,80 @@
+{
+	"name": "rep4rep-bot",
+	"version": "0.1.0",
+	"description": "Automated bot for working with the Rep4Rep platform",
+	"main": "main.js",
+	"scripts": {
+		"start": "electron .",
+		"dev": "NODE_ENV=development electron .",
+		"build": "electron-builder",
+		"build-win": "electron-builder --win",
+		"build-linux": "electron-builder --linux",
+		"build-mac": "electron-builder --mac",
+		"postinstall": "electron-builder install-app-deps",
+		"pack": "electron-builder --dir",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [
+		"rep4rep",
+		"steam",
+		"bot",
+		"automation"
+	],
+	"author": "Rep4Rep Bot Developer",
+	"license": "MIT",
+	"packageManager": "pnpm@10.12.4",
+	"dependencies": {
+		"@bbob/parser": "^4.2.0",
+		"@bbob/plugin-helper": "^4.2.0",
+		"@doctormckay/stdlib": "^2.10.0",
+		"@mapbox/node-pre-gyp": "^2.0.0",
+		"abbrev": "^3.0.1",
+		"axios": "^1.10.0",
+		"consola": "^3.4.2",
+		"detect-libc": "^2.0.4",
+		"file-manager": "^2.0.1",
+		"psl": "^1.15.0",
+		"semver": "^7.7.2",
+		"sqlite3": "5.1.6",
+		"steam-community": "^0.2.2",
+		"steam-user": "^5.2.3",
+		"steamcommunity": "^3.48.8",
+		"steamid": "^2.1.0"
+	},
+	"devDependencies": {
+		"electron": "^37.1.0",
+		"electron-builder": "^24.13.3",
+		"electron-rebuild": "^3.2.9",
+		"node-gyp": "^11.2.0",
+		"nopt": "^8.1.0"
+	},
+	"build": {
+		"appId": "com.rep4rep.bot",
+		"productName": "Rep4Rep Bot",
+		"directories": {
+			"output": "dist"
+		},
+		"files": [
+			"main.js",
+			"src/**/*",
+			"assets/**/*",
+			"node_modules/**/*"
+		],
+		"win": {
+			"target": "nsis",
+			"icon": "src/assets/icon.ico"
+		},
+		"linux": {
+			"target": "AppImage",
+			"icon": "src/assets/icon.png"
+		},
+		"mac": {
+			"target": "dmg",
+			"icon": "src/assets/icon.icns"
+		},
+		"nsis": {
+			"oneClick": false,
+			"allowToChangeInstallationDirectory": true
+		}
+	}
+}

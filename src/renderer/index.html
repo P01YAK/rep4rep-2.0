@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rep4Rep Bot [v0.1.0 beta]</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        .api-key-link {
+            color: #7c8cff;
+            text-decoration: none;
+            font-weight: 500;
+            margin-left: 8px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .api-key-link:hover {
+            color: #aab6ff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Custom window header -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="app-icon"></div>
+                <span class="app-title">Rep4Rep Bot [v0.1.0 beta]</span>
+            </div>
+            <div class="title-bar-controls">
+                <button class="control-btn minimize-btn" id="minimizeBtn">
+                    <svg width="12" height="12" viewBox="0 0 12 12">
+                        <rect x="2" y="5" width="8" height="2" fill="currentColor" />
+                    </svg>
+                </button>
+                <button class="control-btn close-btn" id="closeBtn">
+                    <svg width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="main-content">
+            <!-- Sidebar menu -->
+            <nav class="sidebar">
+                <div class="nav-items">
+                    <button class="nav-item active" data-page="home">
+                        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            <polyline points="9,22 9,12 15,12 15,22" />
+                        </svg>
+                        <span>General</span>
+                    </button>
+                    <button class="nav-item" data-page="accounts">
+                        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Accounts</span>
+                    </button>
+                    <button class="nav-item" data-page="settings">
+                        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+                        </svg>
+                        <span>Settings</span>
+                    </button>
+                    <button class="nav-item" data-page="about">
+                        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                            <path d="M12 17h.01" />
+                        </svg>
+                        <span>About</span>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Content area -->
+            <div class="content-area">
+                <!-- Home page -->
+                <div class="page active" id="home-page">
+                    <div class="page-header">
+                        <h1>General</h1>
+                        <div class="stats-container">
+                            <div class="stat-card">
+                                <div class="stat-value" id="totalPoints">0</div>
+                                <div class="stat-label">Points</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="pendingTasks">0</div>
+                                <div class="stat-label">Pending</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="activeAccounts">0</div>
+                                <div class="stat-label">Active accounts</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-panel">
+                        <div class="control-buttons">
+                            <button class="control-btn-large start-btn" id="startBtn">
+                                <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <polygon points="5,3 19,12 5,21" fill="currentColor" />
+                                </svg>
+                                <span>Start</span>
+                            </button>
+                            <button class="control-btn-large stop-btn" id="stopBtn" disabled>
+                                <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <rect x="6" y="6" width="12" height="12" fill="currentColor" />
+                                </svg>
+                                <span>Stop</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="logs-container">
+                        <div class="logs-header">
+                            <h3>Logs</h3>
+                            <button class="clear-logs-btn" id="clearLogsBtn">Clear</button>
+                        </div>
+                        <div class="logs-content" id="logsContent">
+                            <div class="log-entry info">
+                                <!-- <span class="log-time">[00:00:00]</span> -->
+                                <!-- <span class="log-message">App launched</span> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accounts page -->
+                <div class="page" id="accounts-page">
+                    <div class="page-header">
+                        <h1>Manage accounts</h1>
+                        <button class="add-account-btn" id="addAccountBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            Add account
+                        </button>
+                    </div>
+
+                    <div class="accounts-list" id="accountsList">
+                        <!-- Accounts will be added dynamically -->
+                    </div>
+                </div>
+
+                <!-- Settings page -->
+                <div class="page" id="settings-page">
+                    <div class="page-header">
+                        <h1>Settings</h1>
+                    </div>
+
+                    <div class="settings-content">
+                        <div class="settings-section">
+                            <h3>API settings</h3>
+                            <div class="form-group">
+                                <label for="apiKey">API key Rep4Rep:
+                                    <a href="https://rep4rep.com/settings" target="_blank" class="api-key-link">Get your
+                                        API key</a>
+                                </label>
+                                <input type="password" id="apiKey" placeholder="Enter your API key">
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Timings</h3>
+                            <div class="form-group">
+                                <label for="taskDelay">Task delay (sec):</label>
+                                <input type="number" id="taskDelay" min="1" max="300" value="30">
+                            </div>
+                            <div class="form-group">
+                                <label for="commentDelay">Comment delay (sec):</label>
+                                <input type="number" id="commentDelay" min="1" max="60" value="5">
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Work mode</h3>
+                            <div class="form-group">
+                                <label>
+                                    <input type="radio" name="workMode" value="parallel" checked>
+                                    Multithreading (up to 10 accounts)
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="radio" name="workMode" value="sequential">
+                                    Sequential work
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="save-settings-btn" id="saveSettingsBtn">Save settings</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About page -->
+                <div class="page" id="about-page">
+                    <div class="page-header">
+                        <h1>About</h1>
+                    </div>
+
+                    <div class="about-content">
+                        <div class="about-section">
+                            <h3>Rep4Rep Bot</h3>
+                            <p>Automated bot for working with the Rep4Rep platform.</p>
+                        </div>
+
+                        <div class="about-section">
+                            <h4>Features:</h4>
+                            <ul>
+                                <li>Manage multiple Steam accounts</li>
+                                <li>Automated task completion</li>
+                                <li>Multithreading processing</li>
+                                <li>Secure token storage</li>
+                                <li>Modern interface with animations</li>
+                            </ul>
+                        </div>
+
+                        <div class="about-section">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>Electron</li>
+                                <li>Node.js</li>
+                                <li>Steam Web API</li>
+                                <li>Rep4Rep API</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal windows -->
+    <div class="modal" id="addAccountModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add account</h3>
+                <button class="modal-close" id="closeAddAccountModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="addAccountForm">
+                    <div class="form-group">
+                        <label for="accountLogin">Steam login:</label>
+                        <input type="text" id="accountLogin" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="accountPassword">Password:</label>
+                        <input type="password" id="accountPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn" id="cancelAddAccount">Cancel</button>
+                        <button type="submit" class="submit-btn">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay for Steam Guard -->
+    <div id="steamGuardOverlay"
+        style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:1000;">
+    </div>
+    <!-- Modal window for Steam Guard -->
+    <div class="modal" id="steamGuardModal"
+        style="display:none; z-index:1001; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Enter Steam Guard code</h3>
+                <button class="modal-close" id="closeSteamGuardModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="steamGuardForm">
+                    <div class="form-group">
+                        <label for="steamGuardCode">Code from Steam app or e-mail:</label>
+                        <input type="text" id="steamGuardCode" maxlength="10" autocomplete="one-time-code" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn" id="cancelSteamGuard">Cancel</button>
+                        <button type="submit" class="submit-btn">Continue</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="steamGuardInline"
+        style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
+        <div
+            style="max-width:400px;margin:100px auto;padding:32px 24px;background:#23263a;border-radius:16px;box-shadow:0 8px 32px #0006;">
+            <h3 style="margin-bottom:16px;">Enter Steam Guard code</h3>
+            <form id="steamGuardInlineForm">
+                <input type="text" id="steamGuardInlineCode" maxlength="10" autocomplete="one-time-code" required
+                    style="width:100%;padding:12px 10px;font-size:18px;margin-bottom:16px;">
+                <div style="display:flex;gap:12px;">
+                    <button type="button" id="cancelSteamGuardInline"
+                        style="flex:1;padding:10px 0;background:#374151;color:#fff;border:none;border-radius:8px;">Cancel</button>
+                    <button type="submit"
+                        style="flex:1;padding:10px 0;background:#7c3aed;color:#fff;border:none;border-radius:8px;">Continue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
