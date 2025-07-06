@@ -1,6 +1,6 @@
 {
 	"name": "rep4rep-bot",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"description": "Automated bot for working with the Rep4Rep platform",
 	"main": "main.js",
 	"scripts": {

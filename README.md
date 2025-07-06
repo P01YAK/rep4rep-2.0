@@ -4,6 +4,27 @@
 
 Rep4Rep Bot is an automated application for working with the Rep4Rep platform. The bot automatically completes tasks by commenting on Steam profiles.
 
+## [0.2.3] - 07.07.2025
+
+---
+
+### ✨ Added
+
+- Custom modal window for Steam Guard code input in the same style as account addition.
+
+### 🛠️ Fixed
+
+- Fixed a bug where input fields in the Add Account modal could become inactive after deleting an account.
+- Fixed focus and activation issues for modal input fields after account deletion.
+
+### 🚀 Improved
+
+- The Delete button in modals now has a bright red gradient style for better UX and clarity.
+- All modal windows now have a unified, modern design.
+- Improved error handling and logging for task execution and limits.
+
+---
+
 ## [0.2.2] - 06.07.2025
 
 ---

@@ -449,13 +449,21 @@ body {
 }
 
 .delete-btn {
-	background-color: #7f1d1d;
-	color: #f87171;
+	padding: 10px 20px;
+	background: linear-gradient(135deg, #ff3b3b, #e60000);
+	color: #fff;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all 0.2s ease;
 }
 
-.delete-btn:hover {
-	background-color: #991b1b;
-	color: #ffffff;
+.delete-btn:hover,
+.delete-btn:focus {
+	background: linear-gradient(135deg, #e60000, #b80000);
+	box-shadow: 0 4px 16px #ff3b3b55;
 }
 
 /* Настройки */

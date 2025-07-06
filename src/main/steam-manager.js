@@ -264,13 +264,7 @@ class SteamManager extends EventEmitter {
 		const account = await this.database.getAccountById(accountId)
 		if (!account) return false
 		if (!account.lastComment) {
-			// Если lastComment отсутствует, считаем что лимит уже исчерпан
-			const now = Date.now()
-			await this.database.updateAccount(accountId, {
-				tasksToday: 10,
-				lastComment: now,
-			})
-			return true
+			return false
 		}
 		const canPerform = await this.canPerformTasks(accountId)
 		if (canPerform) {

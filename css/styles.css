@@ -1,0 +1,24 @@
+.delete-btn {
+	background: linear-gradient(135deg, #ff3b3b, #e60000);
+	color: #fff;
+	border: none;
+	box-shadow: 0 2px 8px #ff3b3b33;
+	transition: background 0.2s, box-shadow 0.2s;
+}
+.delete-btn:hover,
+.delete-btn:focus {
+	background: linear-gradient(135deg, #e60000, #b80000);
+	box-shadow: 0 4px 16px #ff3b3b55;
+}
+.modal .delete-btn.submit-btn {
+	background: #ff3b3b !important;
+	color: #fff !important;
+	border: none;
+	box-shadow: 0 2px 8px #ff3b3b33;
+	transition: background 0.2s, box-shadow 0.2s;
+}
+.modal .delete-btn.submit-btn:hover,
+.modal .delete-btn.submit-btn:focus {
+	background: #e60000 !important;
+	box-shadow: 0 4px 16px #ff3b3b55;
+}

@@ -9,6 +9,7 @@ class Rep4RepBot {
 			commentDelay: 5,
 			workMode: 'parallel',
 		}
+		this.accountIdToDelete = null // id аккаунта для удаления
 		// Subscribe to account updates from main process
 		if (
 			window.electronAPI &&
@@ -131,6 +132,26 @@ class Rep4RepBot {
 				this.hideSteamGuardInline()
 			}
 		}
+
+		// Кастомное окно удаления аккаунта
+		document
+			.getElementById('closeDeleteAccountModal')
+			.addEventListener('click', () => {
+				this.hideDeleteAccountModal()
+			})
+		document
+			.getElementById('cancelDeleteAccount')
+			.addEventListener('click', () => {
+				this.hideDeleteAccountModal()
+			})
+		document
+			.getElementById('confirmDeleteAccount')
+			.addEventListener('click', () => {
+				if (this.accountIdToDelete) {
+					this.deleteAccountConfirmed(this.accountIdToDelete)
+				}
+				this.hideDeleteAccountModal()
+			})
 	}
 
 	switchPage(page) {
@@ -244,13 +265,27 @@ class Rep4RepBot {
 	}
 
 	showAddAccountModal() {
-		document.getElementById('addAccountModal').classList.add('active')
-		document.getElementById('accountLogin').focus()
+		const modal = document.getElementById('addAccountModal')
+		modal.classList.add('active')
 		document.getElementById('steamGuardOverlay').style.display = 'none'
-		// Always unlock fields and button
-		document.getElementById('accountLogin').disabled = false
-		document.getElementById('accountPassword').disabled = false
-		document.querySelector('#addAccountForm .submit-btn').disabled = false
+		// Сбросить disabled через requestAnimationFrame
+		requestAnimationFrame(() => {
+			const loginInput = document.getElementById('accountLogin')
+			const passInput = document.getElementById('accountPassword')
+			const submitBtn = document.querySelector('#addAccountForm .submit-btn')
+			loginInput.disabled = false
+			loginInput.removeAttribute('disabled')
+			passInput.disabled = false
+			passInput.removeAttribute('disabled')
+			submitBtn.disabled = false
+			submitBtn.removeAttribute('disabled')
+			loginInput.blur()
+			passInput.blur()
+			submitBtn.blur()
+			setTimeout(() => {
+				loginInput.focus()
+			}, 10)
+		})
 	}
 
 	hideAddAccountModal() {
@@ -420,7 +455,7 @@ class Rep4RepBot {
                     <button class="account-btn edit-btn" onclick="bot.editAccount('${
 											account.id
 										}')">Edit</button>
-                    <button class="account-btn delete-btn" onclick="bot.deleteAccount('${
+                    <button class="account-btn delete-btn" onclick="bot.showDeleteAccountModal('${
 											account.id
 										}')">Delete</button>
                 </div>
@@ -480,11 +515,17 @@ class Rep4RepBot {
 		}
 	}
 
-	async deleteAccount(accountId) {
-		if (!confirm('Are you sure you want to delete this account?')) {
-			return
-		}
+	showDeleteAccountModal(accountId) {
+		this.accountIdToDelete = accountId
+		document.getElementById('deleteAccountModal').classList.add('active')
+	}
 
+	hideDeleteAccountModal() {
+		this.accountIdToDelete = null
+		document.getElementById('deleteAccountModal').classList.remove('active')
+	}
+
+	async deleteAccountConfirmed(accountId) {
 		try {
 			await window.electronAPI.deleteAccount(accountId)
 			this.accounts = this.accounts.filter(acc => acc.id !== accountId)
@@ -492,6 +533,20 @@ class Rep4RepBot {
 			this.updateStats()
 			this.addLog('info', 'Account deleted')
 			this.showNotification('success', 'Account deleted')
+			// Если окно добавления аккаунта открыто, разблокировать поля и кнопку полностью
+			if (
+				document.getElementById('addAccountModal').classList.contains('active')
+			) {
+				const loginInput = document.getElementById('accountLogin')
+				const passInput = document.getElementById('accountPassword')
+				const submitBtn = document.querySelector('#addAccountForm .submit-btn')
+				loginInput.disabled = false
+				loginInput.removeAttribute('disabled')
+				passInput.disabled = false
+				passInput.removeAttribute('disabled')
+				submitBtn.disabled = false
+				submitBtn.removeAttribute('disabled')
+			}
 		} catch (error) {
 			this.addLog('error', `Error deleting account: ${error.message}`)
 			this.showNotification('error', 'Error deleting account')
