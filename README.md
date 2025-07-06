@@ -4,6 +4,16 @@
 
 Rep4Rep Bot is an automated application for working with the Rep4Rep platform. The bot automatically completes tasks by commenting on Steam profiles.
 
+## [0.2.2] - 06.07.2025
+
+---
+
+### 🛠️ Fixed
+
+- Fixed link to API key.
+
+---
+
 ## [0.2.1] - 06.07.2025
 
 ---
