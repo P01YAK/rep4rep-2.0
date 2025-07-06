@@ -6,11 +6,10 @@ class Rep4RepBot {
 		this.settings = {
 			apiKey: '',
 			taskDelay: 30,
-			commentDelay: 5,
-			workMode: 'parallel',
+			commentDelay: 10,
+			workMode: 'sequential',
 		}
-		this.accountIdToDelete = null // id аккаунта для удаления
-		// Subscribe to account updates from main process
+		this.accountIdToDelete = null
 		if (
 			window.electronAPI &&
 			typeof window.electronAPI.onAccountsUpdated === 'function'
