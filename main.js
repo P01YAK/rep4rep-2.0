@@ -75,7 +75,7 @@ app.whenReady().then(() => {
 	rep4repAPI = new Rep4RepAPI()
 	botWorker = new BotWorker(database, steamManager, rep4repAPI)
 
-	// Настройка обработчиков событий
+	// Setting up events
 	setupSteamManagerEvents()
 	setupBotWorkerEvents()
 
@@ -125,6 +125,12 @@ function setupBotWorkerEvents() {
 	botWorker.on('log', (type, message) => {
 		sendLogMessage(type, message)
 	})
+
+	botWorker.on('accountsUpdated', () => {
+		if (mainWindow && !mainWindow.isDestroyed()) {
+			mainWindow.webContents.send('accounts-updated')
+		}
+	})
 }
 
 function sendLogMessage(type, message) {
@@ -156,7 +162,7 @@ app.on('activate', () => {
 	}
 })
 
-// IPC обработчики
+// IPC handlers
 ipcMain.handle('minimize-window', () => {
 	mainWindow.minimize()
 })
@@ -173,7 +179,7 @@ ipcMain.handle('get-working-status', () => {
 	return isWorking
 })
 
-// Управление аккаунтами
+// Account management
 ipcMain.handle('add-account', async (event, account) => {
 	try {
 		return await database.addAccount(account)
@@ -206,7 +212,7 @@ ipcMain.handle('delete-account', async (event, id) => {
 	}
 })
 
-// Настройки
+// Settings
 ipcMain.handle('get-settings', async () => {
 	try {
 		return await database.getAllSettings()
@@ -223,7 +229,7 @@ ipcMain.handle('save-settings', async (event, settings) => {
 	}
 })
 
-// Steam авторизация
+// Steam authorization
 ipcMain.handle('steam-login', async (event, credentials) => {
 	try {
 		return await steamManager.loginAccount(credentials.accountId)
@@ -323,7 +329,7 @@ ipcMain.handle('validate-api-token', async (event, apiKey) => {
 	}
 })
 
-// Управление ботом
+// Bot management
 ipcMain.handle('start-bot', async event => {
 	// sendLogMessage('info', '[DEBUG] Received start-bot call')
 	// console.log('[DEBUG] Received start-bot call')

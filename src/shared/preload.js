@@ -47,4 +47,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 		ipcRenderer.on('steam-guard-required', (event, data) =>
 			callback(event, data)
 		),
+	// Accounts updated event
+	onAccountsUpdated: callback => ipcRenderer.on('accounts-updated', callback),
 })

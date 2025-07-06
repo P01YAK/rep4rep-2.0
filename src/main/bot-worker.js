@@ -19,6 +19,7 @@ class BotWorker extends EventEmitter {
 		this.taskQueue = []
 		this.completedTasks = 0
 		this.failedTasks = 0
+		this.startStatusUpdater()
 	}
 
 	async start(settings) {
@@ -138,26 +139,22 @@ class BotWorker extends EventEmitter {
 			'info',
 			`Starting in parallel mode for ${accounts.length} accounts`
 		)
-
-		// Limit simultaneously working accounts
 		const activeAccounts = accounts.slice(
 			0,
 			this.settings.maxConcurrentAccounts
 		)
-
-		for (const account of activeAccounts) {
-			if (!this.isRunning) break
-
-			// Check account work possibility
-			const canWork = await this.canAccountWork(account)
-			if (!canWork) {
-				this.log('warning', `Account ${account.login} cannot work now`)
-				continue
-			}
-
-			// Start worker for account
-			this.startAccountWorker(account)
-		}
+		// Parallel workers and check accounts
+		await Promise.all(
+			activeAccounts.map(async account => {
+				if (!this.isRunning) return
+				const canWork = await this.canAccountWork(account)
+				if (!canWork) {
+					this.log('warning', `Account ${account.login} cannot work now`)
+					return
+				}
+				this.startAccountWorker(account)
+			})
+		)
 	}
 
 	async startSequentialMode(accounts) {
@@ -195,23 +192,23 @@ class BotWorker extends EventEmitter {
 
 	async startAccountWorker(account) {
 		if (this.workers.has(account.id)) {
-			return // Worker already started
+			const worker = this.workers.get(account.id)
+			if (worker.isProcessing) return // Уже работает
 		}
-
 		const worker = {
 			accountId: account.id,
 			login: account.login,
 			isActive: true,
+			isProcessing: true,
 			tasksProcessed: 0,
 			lastActivity: Date.now(),
 			timeout: null,
 		}
-
 		this.workers.set(account.id, worker)
 		this.log('info', `Worker started for account ${account.login}`)
-
-		// Start processing tasks for account
-		this.processAccountTasksLoop(account, worker)
+		this.processAccountTasksLoop(account, worker).finally(() => {
+			worker.isProcessing = false
+		})
 	}
 
 	async processAccountTasksLoop(account, worker) {
@@ -220,8 +217,6 @@ class BotWorker extends EventEmitter {
 				await this.processAccountTasks(account)
 				worker.tasksProcessed++
 				worker.lastActivity = Date.now()
-
-				// Check task limit
 				const hasReachedLimit = await this.steamManager.hasReachedDailyLimit(
 					account.id
 				)
@@ -230,17 +225,13 @@ class BotWorker extends EventEmitter {
 					worker.isActive = false
 					break
 				}
-
-				// Delay between cycles
 				await this.delay(this.settings.taskDelay * 1000)
 			} catch (error) {
 				this.log('error', `Worker error for ${account.login}: ${error.message}`)
-
-				// Increase delay on error
 				await this.delay(this.settings.taskDelay * 2000)
 			}
 		}
-		// After worker work — do logout
+		worker.isProcessing = false
 		await this.steamManager.logoutAccount(account.id)
 		this.workers.delete(account.id)
 		this.log(
@@ -314,9 +305,21 @@ class BotWorker extends EventEmitter {
 				this.log('info', `Task limit reached for ${account.login}`)
 				break
 			}
-			await this.executeTask(account, accountProfile, task)
+			const result = await this.executeTask(account, accountProfile, task)
+			if (result === 'limit' || account._stopTasks) {
+				break // Exit loop
+			}
 			tasksToday++
 			// Pause between tasks not touch (leaving as is)
+		}
+		// After loop: if limit reached, stop worker
+		if (tasksToday >= maxTasks) {
+			this.log(
+				'info',
+				`Account ${account.login} reached daily limit (by tasksToday), stopping worker`
+			)
+			const worker = this.workers.get(account.id)
+			if (worker) worker.isActive = false
 		}
 	}
 
@@ -380,36 +383,70 @@ class BotWorker extends EventEmitter {
 				`Task completed for ${account.login} (comment ${commentId})`
 			)
 		} catch (error) {
-			this.failedTasks++
-			// If error is 'You've been posting too frequently', set tasksToday=10 for this account
+			// Posting frequency limit
 			if (
 				typeof error.message === 'string' &&
 				error.message.includes("You've been posting too frequently")
 			) {
-				await this.database.updateAccount(account.id, { tasksToday: 10 })
+				const now = Date.now()
+				try {
+					const res = await this.database.updateAccount(account.id, {
+						tasksToday: 10,
+						lastComment: now,
+					})
+					this.log(
+						'info',
+						`DB updated: tasksToday=10, lastComment=${now} for ${
+							account.login
+						}, result: ${JSON.stringify(res)}`
+					)
+					account.lastComment = now
+				} catch (err) {
+					this.log(
+						'error',
+						`DB update failed for ${account.login}: ${err.message}`
+					)
+				}
+				account.tasksToday = 10
 				this.log(
 					'warning',
 					`Account ${account.login} reached posting frequency limit, skipping for 24h`
 				)
+				this.emit('accountsUpdated')
+				if (typeof this.loadAccounts === 'function') {
+					await this.loadAccounts()
+				}
+				// Stop worker
+				const worker = this.workers.get(account.id)
+				if (worker) worker.isActive = false
+				account._stopTasks = true
+				return 'limit'
 			}
-			// Log error
-			await this.database.addTaskLog({
-				accountId: account.id,
-				taskId: task.taskId,
-				targetSteamId: task.targetSteamProfileId,
-				commentId: null,
-				status: 'failed',
-			})
+			// Error "do not allow you to add comments"
+			if (
+				typeof error.message === 'string' &&
+				error.message.includes('do not allow you to add comments')
+			) {
+				this.log(
+					'warning',
+					`Account ${account.login} cannot comment on this profile, skipping task`
+				)
+				// Just skip to next task
+				return
+			}
+			this.log(
+				'error',
+				`Task execution error for ${account.login}: ${error.message}`
+			)
 			this.emit('taskFailed', {
 				accountId: account.id,
 				taskId: task.taskId,
 				error: error.message,
 			})
-			this.log(
-				'error',
-				`Task execution error for ${account.login}: ${error.message}`
-			)
-			throw error
+			// If critical error, stop worker
+			if (typeof this.loadAccounts === 'function') {
+				await this.loadAccounts()
+			}
 		}
 	}
 
@@ -508,6 +545,24 @@ class BotWorker extends EventEmitter {
 			if (canWork) {
 				this.startAccountWorker(account)
 			}
+		}
+	}
+
+	startStatusUpdater() {
+		if (this.statusUpdater) return
+		this.statusUpdater = setInterval(async () => {
+			const accounts = await this.database.getAccounts()
+			for (const account of accounts) {
+				await this.steamManager.resetTaskCounterIfNeeded(account.id)
+			}
+			this.log('info', 'Accounts status updated (background)')
+		}, 10 * 1000) // every 10 seconds
+	}
+
+	stopStatusUpdater() {
+		if (this.statusUpdater) {
+			clearInterval(this.statusUpdater)
+			this.statusUpdater = null
 		}
 	}
 }

@@ -9,7 +9,15 @@ class Rep4RepBot {
 			commentDelay: 5,
 			workMode: 'parallel',
 		}
-
+		// Subscribe to account updates from main process
+		if (
+			window.electronAPI &&
+			typeof window.electronAPI.onAccountsUpdated === 'function'
+		) {
+			window.electronAPI.onAccountsUpdated(() => {
+				this.loadAccounts()
+			})
+		}
 		this.init()
 	}
 

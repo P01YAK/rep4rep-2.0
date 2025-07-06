@@ -261,6 +261,17 @@ class SteamManager extends EventEmitter {
 
 	// Сброс счетчика заданий если прошло 24 часа
 	async resetTaskCounterIfNeeded(accountId) {
+		const account = await this.database.getAccountById(accountId)
+		if (!account) return false
+		if (!account.lastComment) {
+			// Если lastComment отсутствует, считаем что лимит уже исчерпан
+			const now = Date.now()
+			await this.database.updateAccount(accountId, {
+				tasksToday: 10,
+				lastComment: now,
+			})
+			return true
+		}
 		const canPerform = await this.canPerformTasks(accountId)
 		if (canPerform) {
 			await this.database.updateAccount(accountId, { tasksToday: 0 })

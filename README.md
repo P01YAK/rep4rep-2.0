@@ -4,13 +4,27 @@
 
 Rep4Rep Bot is an automated application for working with the Rep4Rep platform. The bot automatically completes tasks by commenting on Steam profiles.
 
-# Changelog 📝
+## [0.2.1] - 06.07.2025
 
-All significant changes in the project will be documented in this file.
+---
+
+### 🛠️ Fixed
+
+- Fixed the task limit reset logic: if lastComment = NULL, tasksToday is now automatically set to 10 and lastComment is set to the current time.
+- When the posting frequency limit is reached, both tasksToday=10 and lastComment are now updated simultaneously.
+
+### 🚀 Improved
+
+- Improved database update logging for easier debugging of task limits.
+- The UI now always correctly displays the task limit and last comment date after changes in the database.
+
+---
+
+# Changelog 📝
 
 ## [0.1.0] - 03.07.2025
 
-### Added
+### ✨ Added
 
 - Basic functionality for Rep4Rep bot
 - Steam account management

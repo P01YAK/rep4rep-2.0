@@ -1,6 +1,6 @@
 {
 	"name": "rep4rep-bot",
-	"version": "0.1.0",
+	"version": "0.2.1",
 	"description": "Automated bot for working with the Rep4Rep platform",
 	"main": "main.js",
 	"scripts": {
@@ -34,6 +34,7 @@
 		"detect-libc": "^2.0.4",
 		"file-manager": "^2.0.1",
 		"psl": "^1.15.0",
+		"request": "^2.88.2",
 		"semver": "^7.7.2",
 		"sqlite3": "5.1.6",
 		"steam-community": "^0.2.2",
