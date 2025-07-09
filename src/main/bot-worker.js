@@ -58,41 +58,6 @@ class BotWorker extends EventEmitter {
 				)
 				throw new Error('No accounts with steamId to start')
 			}
-			// Authorize accounts if needed
-			for (const acc of accounts) {
-				const client = this.steamManager.getSteamClient(acc.id)
-				if (!client || !client.isLoggedIn) {
-					this.log(
-						'info',
-						`Account ${acc.login} is not authorized, trying to authorize...`
-					)
-					try {
-						await this.steamManager.loginAccount(acc.id)
-						this.log(
-							'success',
-							`Account ${acc.login} successfully authorized automatically`
-						)
-					} catch (err) {
-						this.log(
-							'error',
-							`Account ${acc.login} authorization error: ${err.message}`
-						)
-						continue
-					}
-				}
-			}
-			// Post after authorization filter only real authorized
-			accounts = accounts.filter(acc => {
-				const client = this.steamManager.getSteamClient(acc.id)
-				return client && client.isLoggedIn
-			})
-			if (accounts.length === 0) {
-				this.log(
-					'error',
-					'Failed to authorize any account. Check login/password and tokens.'
-				)
-				throw new Error('Failed to authorize any account')
-			}
 			// Set API token
 			this.rep4repAPI.setApiToken(this.settings.apiKey)
 			// Start work depending on mode
@@ -139,10 +104,11 @@ class BotWorker extends EventEmitter {
 			'info',
 			`Starting in parallel mode for ${accounts.length} accounts`
 		)
-		const activeAccounts = accounts.slice(
-			0,
-			this.settings.maxConcurrentAccounts
+		const maxAccounts = Math.max(
+			1,
+			Math.min(10, this.settings.maxConcurrentAccounts || 10)
 		)
+		const activeAccounts = accounts.slice(0, maxAccounts)
 		// Parallel workers and check accounts
 		await Promise.all(
 			activeAccounts.map(async account => {
@@ -172,9 +138,52 @@ class BotWorker extends EventEmitter {
 				continue
 			}
 
-			await this.processAccountTasks(account)
+			// Авторизация по токену/паролю, если не авторизован
+			if (!this.steamManager.isAccountLoggedIn(account.id)) {
+				this.log('info', `Authorizing account ${account.login}`)
+				try {
+					await this.steamManager.loginAccount(account.id)
+				} catch (err) {
+					this.log(
+						'error',
+						`Account ${account.login} authorization error: ${err.message}`
+					)
+					continue // Переходим к следующему аккаунту
+				}
+			}
 
-			// Delay between accounts
+			// Выполнение задач с обработкой 429
+			let retry = true
+			while (retry && this.isRunning) {
+				retry = false
+				try {
+					await this.processAccountTasks(account)
+				} catch (error) {
+					if (
+						(error && error.code === 429) ||
+						(typeof error.message === 'string' &&
+							error.message.includes('429')) ||
+						(typeof error.message === 'string' &&
+							error.message.includes('Too Many Requests'))
+					) {
+						this.log(
+							'warning',
+							'Received 429 Too Many Requests. Pausing for 5 minutes...'
+						)
+						await this.delay(5 * 60 * 1000)
+						retry = true
+						continue
+					} else {
+						throw error
+					}
+				}
+			}
+
+			// Логаут после завершения
+			this.log('info', `Account ${account.login} finished work, logging out`)
+			await this.steamManager.logoutAccount(account.id)
+
+			// Задержка между аккаунтами (если не последний)
 			if (this.isRunning && accounts.indexOf(account) < accounts.length - 1) {
 				await this.delay(this.settings.taskDelay * 1000)
 			}
@@ -555,7 +564,6 @@ class BotWorker extends EventEmitter {
 			for (const account of accounts) {
 				await this.steamManager.resetTaskCounterIfNeeded(account.id)
 			}
-			this.log('info', 'Accounts status updated (background)')
 		}, 10 * 1000) // every 10 seconds
 	}
 

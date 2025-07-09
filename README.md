@@ -1,5 +1,29 @@
 # Rep4Rep Bot 🤖
 
+## [0.2.4] - 09.07.2025
+
+---
+
+### ✨ Added
+
+- Sidebar links (Rep4Rep.com, GitHub Releases) now have a unified style and are fixed to the bottom of the sidebar.
+- New account status logic: newly added accounts now start as 'offline' and are not shown as 'Authorized' until successful login.
+- The "Accounts with limit" counter now updates instantly when accounts change.
+
+### 🛠️ Fixed
+
+- Removed background status log message from logs.
+- Fixed width and alignment of sidebar links to match navigation items.
+- Fixed bug with premature "Authorized" status for new accounts.
+
+### 🚀 Improved
+
+- All interface labels are now for consistency.
+- The polling interval for Rep4Rep points and pending is now clearly documented and can be easily changed.
+- Improved real-time updates for account statistics.
+
+---
+
 ## Project Description
 
 Rep4Rep Bot is an automated application for working with the Rep4Rep platform. The bot automatically completes tasks by commenting on Steam profiles.

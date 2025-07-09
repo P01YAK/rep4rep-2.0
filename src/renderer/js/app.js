@@ -6,10 +6,12 @@ class Rep4RepBot {
 		this.settings = {
 			apiKey: '',
 			taskDelay: 30,
-			commentDelay: 10,
+			commentDelay: 15,
 			workMode: 'sequential',
+			maxConcurrentAccounts: 2,
 		}
 		this.accountIdToDelete = null
+		this.accountsFirstRender = true
 		if (
 			window.electronAPI &&
 			typeof window.electronAPI.onAccountsUpdated === 'function'
@@ -170,6 +172,7 @@ class Rep4RepBot {
 
 		// Update data for the current page
 		if (page === 'accounts') {
+			this.accountsFirstRender = true
 			this.renderAccounts()
 		} else if (page === 'settings') {
 			this.loadSettingsForm()
@@ -318,7 +321,7 @@ class Rep4RepBot {
 			token: null,
 			lastComment: null,
 			tasksToday: 0,
-			status: 'ready',
+			status: 'offline',
 		}
 
 		try {
@@ -339,6 +342,7 @@ class Rep4RepBot {
 		try {
 			this.accounts = (await window.electronAPI.getAccounts()) || []
 			this.renderAccounts()
+			this.updateStats()
 		} catch (error) {
 			this.addLog('error', `Error loading accounts: ${error.message}`)
 		}
@@ -346,41 +350,17 @@ class Rep4RepBot {
 
 	async renderAccounts() {
 		const accountsList = document.getElementById('accountsList')
-
-		if (this.accounts.length === 0) {
-			accountsList.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </div>
-                    	<h3>Accounts not added</h3>
-                    <p>Click "Add account" to start working</p>
-                </div>
-            `
-			return
+		if (this.accountsFirstRender) {
+			accountsList.classList.remove('no-animate')
+		} else {
+			accountsList.classList.add('no-animate')
 		}
-
-		// Update account statuses
-		for (const account of this.accounts) {
-			try {
-				account.status = await window.electronAPI.getAccountStatus(account.id)
-				account.timeUntilReset = await window.electronAPI.getTimeUntilReset(
-					account.id
-				)
-			} catch (error) {
-				account.status = 'error'
-			}
-		}
-
 		accountsList.innerHTML = this.accounts
 			.map(
 				account => `
-            <div class="account-card hover-lift" data-account-id="${
-							account.id
-						}">
+            <div class="account-card${
+							this.accountsFirstRender ? ' hover-lift' : ''
+						}" data-account-id="${account.id}">
                 <div class="account-header">
                     <div class="account-login">
                         ${
@@ -462,6 +442,7 @@ class Rep4RepBot {
         `
 			)
 			.join('')
+		this.accountsFirstRender = false
 	}
 
 	getStatusText(status) {
@@ -566,6 +547,12 @@ class Rep4RepBot {
 			if (settings) {
 				this.settings = { ...this.settings, ...settings }
 			}
+			if (settings.maxConcurrentAccounts) {
+				this.settings.maxConcurrentAccounts = Math.max(
+					1,
+					Math.min(10, parseInt(settings.maxConcurrentAccounts) || 10)
+				)
+			}
 		} catch (error) {
 			this.addLog('error', `Error loading settings: ${error.message}`)
 		}
@@ -581,6 +568,8 @@ class Rep4RepBot {
 		workModeRadios.forEach(radio => {
 			radio.checked = radio.value === this.settings.workMode
 		})
+		document.getElementById('maxConcurrentAccounts').value =
+			this.settings.maxConcurrentAccounts || 10
 	}
 
 	async validateApiKey() {
@@ -610,12 +599,20 @@ class Rep4RepBot {
 		const workMode = document.querySelector(
 			'input[name="workMode"]:checked'
 		).value
+		let maxConcurrentAccounts = document
+			.getElementById('maxConcurrentAccounts')
+			.value.replace(/\D/g, '')
+		maxConcurrentAccounts = Math.max(
+			1,
+			Math.min(10, parseInt(maxConcurrentAccounts) || 10)
+		)
 
 		this.settings = {
 			apiKey,
 			taskDelay,
 			commentDelay,
 			workMode,
+			maxConcurrentAccounts,
 		}
 
 		try {
@@ -630,30 +627,37 @@ class Rep4RepBot {
 
 	async updateStats() {
 		try {
-			// Update account statistics
-			const activeAccounts = this.accounts.filter(
-				acc => acc.status === 'ready' || acc.status === 'working'
+			// Считаем аккаунты с лимитом (tasksToday >= 10)
+			const limitedAccounts = this.accounts.filter(
+				acc => acc.tasksToday >= 10
 			).length
-			document.getElementById('activeAccounts').textContent = activeAccounts
-
-			// If there is an API key, get user information
+			const totalAccounts = this.accounts.length
+			// Обновляем блок Active Accounts
+			const activeAccountsBlock = document.getElementById('activeAccounts')
+			if (activeAccountsBlock) {
+				activeAccountsBlock.innerHTML = `<span class="gradient-text">${limitedAccounts}</span><span class="gradient-text">/</span><span class="gradient-text">${totalAccounts}</span>`
+			}
+			
 			if (this.settings.apiKey) {
 				const userInfo = await window.electronAPI.getUserInfo(
 					this.settings.apiKey
 				)
 				if (userInfo) {
-					document.getElementById('totalPoints').textContent =
+					document.getElementById(
+						'totalPoints'
+					).innerHTML = `<span class="gradient-text">${
 						userInfo.points || 0
-					document.getElementById('pendingTasks').textContent =
+					}</span>`
+					document.getElementById(
+						'pendingTasks'
+					).innerHTML = `<span class="gradient-text">${
 						userInfo.pendingPoints || 0
-
-					// Counter animations
+					}</span>`
 					this.animateCounter('totalPoints', userInfo.points || 0)
 					this.animateCounter('pendingTasks', userInfo.pendingPoints || 0)
 				}
 			}
 		} catch (error) {
-			// Don't show error if API key is not configured
 			if (this.settings.apiKey) {
 				this.addLog('warning', 'Unable to update statistics')
 			}
@@ -693,7 +697,7 @@ class Rep4RepBot {
 			if (this.currentPage === 'accounts') {
 				this.loadAccounts()
 			}
-		}, 10000)
+		}, 2000) // обновление каждые 2 секунды
 	}
 
 	showNotification(type, message) {
