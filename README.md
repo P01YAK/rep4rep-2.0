@@ -1,5 +1,9 @@
 # Rep4Rep Bot 🤖
 
+## Project Description
+
+Rep4Rep Bot is an automated application for working with the Rep4Rep platform. The bot automatically completes tasks by commenting on Steam profiles.
+
 ## [0.2.4] - 09.07.2025
 
 ---
@@ -23,10 +27,6 @@
 - Improved real-time updates for account statistics.
 
 ---
-
-## Project Description
-
-Rep4Rep Bot is an automated application for working with the Rep4Rep platform. The bot automatically completes tasks by commenting on Steam profiles.
 
 ## [0.2.3] - 07.07.2025
 
