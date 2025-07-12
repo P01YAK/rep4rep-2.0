@@ -11,6 +11,7 @@ class Rep4RepBot {
 			maxConcurrentAccounts: 2,
 		}
 		this.accountIdToDelete = null
+		this.accountIdToEdit = null
 		this.accountsFirstRender = true
 		if (
 			window.electronAPI &&
@@ -85,6 +86,31 @@ class Rep4RepBot {
 		document.getElementById('addAccountForm').addEventListener('submit', e => {
 			e.preventDefault()
 			this.addAccount()
+		})
+
+		// Edit account modal
+		document
+			.getElementById('closeEditAccountModal')
+			.addEventListener('click', () => {
+				this.hideEditAccountModal()
+			})
+
+		document
+			.getElementById('cancelEditAccount')
+			.addEventListener('click', () => {
+				this.hideEditAccountModal()
+			})
+
+		document.getElementById('editAccountForm').addEventListener('submit', e => {
+			e.preventDefault()
+			this.saveEditedAccount()
+		})
+
+		// Close edit modal by clicking outside of it
+		document.getElementById('editAccountModal').addEventListener('click', e => {
+			if (e.target === e.currentTarget) {
+				this.hideEditAccountModal()
+			}
 		})
 
 		// Settings
@@ -534,11 +560,102 @@ class Rep4RepBot {
 	}
 
 	editAccount(accountId) {
-		// TODO: Implement account editing
-		this.showNotification(
-			'info',
-			'The function of editing will be added in the next version'
+		this.accountIdToEdit = accountId
+		const account = this.accounts.find(acc => acc.id === accountId)
+		if (!account) {
+			this.showNotification('error', 'Account not found')
+			return
+		}
+
+		// Fill the form with current account data
+		document.getElementById('editAccountLogin').value = account.login
+		document.getElementById('editAccountPassword').value = account.password
+
+		// Show the modal
+		document.getElementById('editAccountModal').classList.add('active')
+	}
+
+	hideEditAccountModal() {
+		this.accountIdToEdit = null
+		document.getElementById('editAccountModal').classList.remove('active')
+		document.getElementById('editAccountForm').reset()
+	}
+
+	async saveEditedAccount() {
+		if (!this.accountIdToEdit) {
+			this.showNotification('error', 'No account selected for editing')
+			return
+		}
+
+		const login = document.getElementById('editAccountLogin').value.trim()
+		const password = document.getElementById('editAccountPassword').value
+
+		if (!login || !password) {
+			this.showNotification('error', 'Login and password are required')
+			return
+		}
+
+		// Check if an account with the same login already exists (excluding current account)
+		const existingAccount = this.accounts.find(
+			acc => acc.login === login && acc.id !== this.accountIdToEdit
 		)
+		if (existingAccount) {
+			this.showNotification('error', 'Account with this login already exists')
+			return
+		}
+
+		try {
+			// Reset all account data to initial state (only existing fields)
+			const updatedAccount = {
+				login,
+				password,
+				token: null,
+				steamId: null,
+				lastComment: null,
+				tasksToday: 0,
+				status: 'offline',
+			}
+
+			await window.electronAPI.updateAccount(
+				this.accountIdToEdit,
+				updatedAccount
+			)
+
+			// Logout from Steam if account was logged in
+			try {
+				await window.electronAPI.steamLogout(this.accountIdToEdit)
+			} catch (error) {
+				// Ignore logout errors, account might not be logged in
+			}
+
+			// Clear Steam Guard codes for this account
+			if (
+				this._steamGuardCodes &&
+				this._steamGuardCodes[this.accountIdToEdit]
+			) {
+				delete this._steamGuardCodes[this.accountIdToEdit]
+			}
+
+			// Update local account data
+			const accountIndex = this.accounts.findIndex(
+				acc => acc.id === this.accountIdToEdit
+			)
+			if (accountIndex !== -1) {
+				this.accounts[accountIndex] = {
+					...this.accounts[accountIndex],
+					...updatedAccount,
+				}
+			}
+
+			this.hideEditAccountModal()
+			this.renderAccounts()
+			this.updateStats()
+			this.addLog('success', `Account ${login} updated`)
+			this.showNotification('success', 'Account updated successfully')
+		} catch (error) {
+			this.addLog('error', `Error updating account: ${error.message}`)
+			this.showNotification('error', 'Error updating account')
+		}
 	}
 
 	async loadSettings() {
@@ -637,7 +754,7 @@ class Rep4RepBot {
 			if (activeAccountsBlock) {
 				activeAccountsBlock.innerHTML = `<span class="gradient-text">${limitedAccounts}</span><span class="gradient-text">/</span><span class="gradient-text">${totalAccounts}</span>`
 			}
-			
+
 			if (this.settings.apiKey) {
 				const userInfo = await window.electronAPI.getUserInfo(
 					this.settings.apiKey

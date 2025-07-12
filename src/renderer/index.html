@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rep4Rep Bot [v0.2.4 beta]</title>
+    <title>Rep4Rep Bot [v0.2.5 beta]</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/animations.css">
     <style>
@@ -31,7 +31,7 @@
         <div class="title-bar">
             <div class="title-bar-left">
                 <div class="app-icon"></div>
-                <span class="app-title">Rep4Rep Bot [v0.2.4 beta]</span>
+                <span class="app-title">Rep4Rep Bot [v0.2.5 beta]</span>
             </div>
             <div class="title-bar-controls">
                 <button class="control-btn minimize-btn" id="minimizeBtn">
@@ -295,6 +295,32 @@
                     <div class="form-actions">
                         <button type="button" class="cancel-btn" id="cancelAddAccount">Cancel</button>
                         <button type="submit" class="submit-btn">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal window for editing account -->
+    <div class="modal" id="editAccountModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit account</h3>
+                <button class="modal-close" id="closeEditAccountModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="editAccountForm">
+                    <div class="form-group">
+                        <label for="editAccountLogin">Steam login:</label>
+                        <input type="text" id="editAccountLogin" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAccountPassword">Password:</label>
+                        <input type="password" id="editAccountPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn" id="cancelEditAccount">Cancel</button>
+                        <button type="submit" class="submit-btn">Save</button>
                     </div>
                 </form>
             </div>

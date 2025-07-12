@@ -4,6 +4,30 @@
 
 Rep4Rep Bot is an automated application for working with the Rep4Rep platform. The bot automatically completes tasks by commenting on Steam profiles.
 
+## [0.2.5] - 10.07.2025
+
+---
+
+### ✨ Added
+
+- Full account editing: you can now edit Steam login and password for any account. All sensitive data (token, SteamID, daily tasks, etc.) is reset, and the account is considered as never authorized after editing.
+- Modal window for editing accounts with the same modern style as other dialogs.
+
+### 🛠️ Fixed
+
+- Fixed a bug in multithreading: now, when the set number of concurrent accounts finish, the next ones start automatically until all are processed.
+- Fixed queue logic: always exactly the specified number of accounts are working in parallel, skipping those that cannot work.
+- The bot now automatically retries all accounts every 5 minutes if all accounts are in limit, just like in sequential mode.
+- (Multithreading maybe broken. I will fix it in next update)
+
+### 🚀 Improved
+
+- Improved sidebar and UI consistency.
+- Updated all version numbers and headers to 0.2.5.
+- Improved logs and error handling for parallel mode.
+
+---
+
 ## [0.2.4] - 09.07.2025
 
 ---

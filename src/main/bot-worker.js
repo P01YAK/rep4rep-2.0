@@ -108,19 +108,43 @@ class BotWorker extends EventEmitter {
 			1,
 			Math.min(10, this.settings.maxConcurrentAccounts || 10)
 		)
-		const activeAccounts = accounts.slice(0, maxAccounts)
-		// Parallel workers and check accounts
-		await Promise.all(
-			activeAccounts.map(async account => {
-				if (!this.isRunning) return
-				const canWork = await this.canAccountWork(account)
-				if (!canWork) {
-					this.log('warning', `Account ${account.login} cannot work now`)
-					return
-				}
-				this.startAccountWorker(account)
+		// Очередь аккаунтов
+		const queue = [...accounts]
+		let running = 0
+		const next = async () => {
+			if (!this.isRunning) return
+			if (queue.length === 0) return
+			if (running >= maxAccounts) return
+			const account = queue.shift()
+			const canWork = await this.canAccountWork(account)
+			if (!canWork) {
+				this.log('warning', `Account ${account.login} cannot work now`)
+				// Если аккаунт не может работать, сразу пробуем следующий
+				await next()
+				return
+			}
+			running++
+			this.log('info', `Worker started for account ${account.login}`)
+			await this.startAccountWorkerWithCallback(account, async () => {
+				running--
+				await next()
 			})
-		)
+		}
+		// Запускаем первые maxAccounts воркеров
+		const starters = []
+		for (let i = 0; i < maxAccounts && i < queue.length; i++) {
+			starters.push(next())
+		}
+		await Promise.all(starters)
+		// После завершения всех аккаунтов пробуем снова через 5 минут, если бот не остановлен
+		if (this.isRunning && queue.length === 0 && running === 0) {
+			this.log('info', 'All accounts processed, restarting in 5 minutes')
+			setTimeout(() => {
+				if (this.isRunning) {
+					this.startParallelMode(accounts)
+				}
+			}, 5 * 60 * 1000)
+		}
 	}
 
 	async startSequentialMode(accounts) {
@@ -217,6 +241,27 @@ class BotWorker extends EventEmitter {
 		this.log('info', `Worker started for account ${account.login}`)
 		this.processAccountTasksLoop(account, worker).finally(() => {
 			worker.isProcessing = false
+		})
+	}
+
+	async startAccountWorkerWithCallback(account, onFinish) {
+		if (this.workers.has(account.id)) {
+			const worker = this.workers.get(account.id)
+			if (worker.isProcessing) return
+		}
+		const worker = {
+			accountId: account.id,
+			login: account.login,
+			isActive: true,
+			isProcessing: true,
+			tasksProcessed: 0,
+			lastActivity: Date.now(),
+			timeout: null,
+		}
+		this.workers.set(account.id, worker)
+		this.processAccountTasksLoop(account, worker).finally(() => {
+			worker.isProcessing = false
+			if (typeof onFinish === 'function') onFinish()
 		})
 	}
 
